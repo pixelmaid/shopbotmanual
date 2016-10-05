@@ -38,8 +38,8 @@
             this.z_out = new System.Windows.Forms.TextBox();
             this.label4 = new System.Windows.Forms.Label();
             this.status_out = new System.Windows.Forms.TextBox();
-            this.button1 = new System.Windows.Forms.Button();
             this.go = new System.Windows.Forms.Button();
+            this.outputField = new System.Windows.Forms.TextBox();
             this.SuspendLayout();
             // 
             // command
@@ -131,15 +131,6 @@
             this.status_out.Size = new System.Drawing.Size(53, 22);
             this.status_out.TabIndex = 8;
             // 
-            // button1
-            // 
-            this.button1.Location = new System.Drawing.Point(0, 0);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(75, 23);
-            this.button1.TabIndex = 10;
-            this.button1.Text = "button1";
-            this.button1.UseVisualStyleBackColor = true;
-            // 
             // go
             // 
             this.go.Location = new System.Drawing.Point(223, 143);
@@ -150,6 +141,14 @@
             this.go.UseVisualStyleBackColor = true;
             this.go.Click += new System.EventHandler(this.go_Click);
             // 
+            // outputField
+            // 
+            this.outputField.Location = new System.Drawing.Point(41, 309);
+            this.outputField.Multiline = true;
+            this.outputField.Name = "outputField";
+            this.outputField.Size = new System.Drawing.Size(305, 105);
+            this.outputField.TabIndex = 12;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
@@ -157,8 +156,8 @@
             this.BackColor = System.Drawing.SystemColors.ControlText;
             this.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
             this.ClientSize = new System.Drawing.Size(462, 444);
+            this.Controls.Add(this.outputField);
             this.Controls.Add(this.go);
-            this.Controls.Add(this.button1);
             this.Controls.Add(this.label4);
             this.Controls.Add(this.status_out);
             this.Controls.Add(this.label3);
@@ -191,8 +190,8 @@
         private System.Windows.Forms.TextBox z_out;
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.TextBox status_out;
-        private System.Windows.Forms.Button button1;
         private System.Windows.Forms.Button go;
+        private System.Windows.Forms.TextBox outputField;
     }
 }
 

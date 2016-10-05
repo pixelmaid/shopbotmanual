@@ -11,3 +11,5 @@ c:\users\t_jacoj\documents\visual studio 2015\Projects\WindowsFormsApplication1\
 c:\users\t_jacoj\documents\visual studio 2015\Projects\WindowsFormsApplication1\WindowsFormsApplication1\obj\Debug\WindowsFormsApplication1.exe.manifest
 c:\users\t_jacoj\documents\visual studio 2015\Projects\WindowsFormsApplication1\WindowsFormsApplication1\obj\Debug\WindowsFormsApplication1.application
 c:\users\t_jacoj\documents\visual studio 2015\Projects\WindowsFormsApplication1\WindowsFormsApplication1\obj\Debug\WindowsFormsApplication1.Form1.resources
+C:\Users\t_jacoj\documents\visual studio 2015\Projects\WindowsFormsApplication1\WindowsFormsApplication1\bin\Debug\websocket-sharp.dll
+C:\Users\t_jacoj\documents\visual studio 2015\Projects\WindowsFormsApplication1\WindowsFormsApplication1\bin\Debug\websocket-sharp.pdb

@@ -12,7 +12,10 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Microsoft.VisualBasic.CompilerServices;
 
-
+using System.Net.Sockets;
+using System.Threading;
+using WebSocketSharp;
+using System.Collections;
 
 namespace WindowsFormsApplication1
 {
@@ -70,27 +73,78 @@ namespace WindowsFormsApplication1
         private bool _PauseInFile;
         private bool _StopInFile;
         private bool _inStack;
-        private Timer tmr;
-        private Timer cmmdtmr;
+        private System.Windows.Forms.Timer tmr;
+        private System.Windows.Forms.Timer cmmdtmr;
         private int runCount;
-        private String currentCommand;
+        private string currentCommand;
+        private ArrayList commandList;
+
+        TcpClient tcpClient = new TcpClient();
+        NetworkStream serverStream = default(NetworkStream);
+        string readData = string.Empty;
+        string msg = "Conected to Server ...";
+        Random rnd = new Random();
 
         public Form1()
         {
             InitializeComponent();
-            runCount = 0;
+            commandList = new ArrayList();
+            int counter = 0;
+            string line;
+
+            System.IO.StreamReader file =
+   new System.IO.StreamReader("drawing.sbp");
+            while ((line = file.ReadLine()) != null)
+            {
+                commandList.Add(line);
+                Console.WriteLine(line);
+                counter++;
+            }
+
+            file.Close();
+           Console.ReadLine();
+            System.Diagnostics.Debug.WriteLine(commandList);
+
+           runCount = 0;
             System.Diagnostics.Debug.WriteLine("Shopbot position:" + readX()+","+readY()+","+readZ());
 
-            tmr = new Timer();
-            tmr.Interval = 5;
+            tmr = new System.Windows.Forms.Timer();
+            tmr.Interval = 50;
             Timer_Enable = true;
 
-            cmmdtmr = new Timer();
-            cmmdtmr.Interval = 5;
+            cmmdtmr = new System.Windows.Forms.Timer();
+            cmmdtmr.Interval = 100;
             cmmdtmr.Tick += (EventHandler)((a0, a1) => this.runCommand());
+
+            connectToServer();
         }
 
 
+        // Purpose:     Connect to node.js application
+        // End Result:  node.js app now has a socket open that can send
+        //              messages back to this tcp client application
+        private void connectToServer()
+        {
+            var ws = new WebSocket("ws://pure-beach-75578.herokuapp.com/", "desktop_client");
+            
+                ws.OnMessage += (sender, e) =>
+                   Console.WriteLine("server says: " + e.Data);
+                ws.OnClose += (sender, e) => {
+                    Console.WriteLine("web socket closed" + e.Code);
+
+                };
+            ws.OnOpen += (sender, e) => {
+                Console.WriteLine("web socket opened" + e);
+    
+  };
+            ws.Connect();
+
+               ws.Send("desktop_client");
+                
+            
+        }
+
+       
 
         private void OnTimedEvent()
         {
@@ -138,8 +192,9 @@ namespace WindowsFormsApplication1
 
         private int readStatus()
         {
-            return Conversions.ToInteger(Interaction.GetSetting("ShopBot", "UserData", "Status", Conversions.ToString(1)));
-
+          //  this.Status = rnd.Next(0, 32);
+            this.Status = Conversions.ToInteger(Interaction.GetSetting("ShopBot", "UserData", "Status", Conversions.ToString(1)));
+            return this.Status;
         }
 
         private int readSpeed()
@@ -182,14 +237,34 @@ namespace WindowsFormsApplication1
 
         private void runCommand()
         {
-            if ((this.Status & 32) != 32) { 
-                this.sendCommand(this.command_entry.Text);
-                runCount += 1;
+          
+           if(runCount < commandList.Count)
+            {
+                this.readStatus();
+                if (this.Status == 0)
+                {
+                   outputField.Text = "sending command to shopbot:"+runCount + ":" + this.Status;
+                    this.sendCommand(commandList[runCount].ToString());
+                    this.command_entry.Text = commandList[runCount].ToString();
+                    runCount++;
+                    this.Status = -1;
+                    //Thread.Sleep(50);
+                }
+                else
+                {
+                    outputField.Text = "status down:"+runCount+":"+this.Status;
+
+                }
+
+
             }
-        if(this.runCount > 5){
-                cmmdtmr.Enabled = false;
-                System.Diagnostics.Debug.WriteLine("timer stopped");
+           else
+            {
+                cmmdtmr.Enabled = false; 
             }
+
+            
+       
         }
 
         private void go_Click(object sender, EventArgs e)

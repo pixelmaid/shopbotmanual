@@ -65,7 +65,11 @@ namespace WindowsFormsApplication1
         private double Loc6;
         private int OutputS;
         private int inputS;
-        private int Status;
+        private int Status =-1;
+        private double X = 0;
+        private double Y = 0;
+        private double Z = 0;
+        
         private double Analog11;
         private double Analog22;
         private double _analog1;
@@ -90,6 +94,7 @@ namespace WindowsFormsApplication1
         string readData = string.Empty;
         string msg = "Conected to Server ...";
         Random rnd = new Random();
+        WebSocket ws;
 
         public Form1(){
             InitializeComponent();
@@ -116,13 +121,13 @@ namespace WindowsFormsApplication1
 
             tmr = new System.Timers.Timer();
             tmr.Interval = 50;
-            Timer_Enable = true;
-            tmr.Start();
+            tmr.Elapsed += new ElapsedEventHandler(OnTimedEvent);
+            
 
             cmmdtmr = new System.Timers.Timer();
-            cmmdtmr.Interval = 100;
+            cmmdtmr.Interval = 500;
             cmmdtmr.Elapsed += new ElapsedEventHandler(runCommand);
-            cmmdtmr.Enabled = true;
+            //cmmdtmr.Enabled = true;
             connectToServer();
         }
 
@@ -132,27 +137,31 @@ namespace WindowsFormsApplication1
         //              messages back to this tcp client application
         private void connectToServer()
         {
-            var ws = new WebSocket("ws://pure-beach-75578.herokuapp.com/", "desktop_client");
+           ws = new WebSocket("ws://pure-beach-75578.herokuapp.com/", "fabricator");
             ws.OnMessage += (sender, e) =>
             {
                 Console.WriteLine("server says: " + e.Data);
+
                 if (e.Data[0] == '{')
                 {
 
                     var jsonObject = JToken.Parse(e.Data);
                     var gcodeArray = jsonObject.Children<JProperty>().FirstOrDefault(x => x.Name == "data").Value as JArray;
+                    cmmdtmr.Stop();
 
                     var fileName = "line_" + DateTime.Now.ToString("yyyyMMddHHmmssfff") + ".sbp";
                     commandQueue.Add(fileName);
-                    var file = new StreamWriter(@fileName);
+
+                    using (StreamWriter sw = new StreamWriter(@fileName))
+                    {
                         foreach (var item in gcodeArray.Children<JValue>())
                         {
-                            Console.WriteLine("gcode line: " + item.ToString());
-                            file.WriteLine(item.ToString());
-
+                            //Console.WriteLine("gcode line: " + item.ToString());
+                            sw.WriteLine(item.ToString());
 
                         }
-                    file.Close();
+                        sw.Close();
+                    }
 
                     cmmdtmr.Start();
                    
@@ -171,11 +180,19 @@ namespace WindowsFormsApplication1
             ws.OnOpen += (sender, e) =>
             {
                 Console.WriteLine("web socket opened" + e);
+              this.sendCommand("FS, C:\\Users\\ShopBot\\Desktop\\Debug\\, c:\\SbParts\\Custom\\");
+                Thread.Sleep(1000);
+                this.sendCommand("VR, .2, .1, .4, 10, .1, .4, .4, 10, 1, .200, 100, .150, 65, 0, 0, .200, .250");
+                Thread.Sleep(1000);
+
+                 this.sendCommand("SW, 0, , ");
+
+                tmr.Start();
+
 
             };
             ws.Connect();
 
-            ws.Send("{\"name\":\"desktop_client\"}");
 
 
         }
@@ -185,7 +202,48 @@ namespace WindowsFormsApplication1
             //this.status_out.Text = Conversions.ToString(readStatus());
             //this.x_out.Text = Conversions.ToString(readX());
             //this.y_out.Text = Conversions.ToString(readY());
-           // this.z_out.Text = Conversions.ToString(readZ());
+            // this.z_out.Text = Conversions.ToString(readZ());
+
+           var _status = readStatus();
+            var _x  = readX();
+            var _y = readY();
+            var _z = readZ();
+            var send = false;
+
+            if (_x != this.X)
+            {
+                this.X = _x;
+                send = true;
+            }
+
+            if (_y != this.Y)
+            {
+                this.Y = _y;
+                send = true;
+            }
+
+            if (_z != this.Z)
+            {
+                this.Z = _z;
+                send = true;
+            }
+
+            if (_status != this.Status)
+            {
+                this.Status = _status;
+                send = true;
+            }
+           // System.Diagnostics.Debug.WriteLine("send=" + send + ","+ _x + "," + X + "," + _status + "," + Status);
+            if (send == true)
+            {
+                var json = new JObject(new JProperty("type", "fabricatior_data"),
+                   new JProperty("x", _x),
+                   new JProperty("y", _y),
+                   new JProperty("z", _z),
+                   new JProperty("status", _status));
+
+                ws.Send(json.ToString());
+            }
             if ((this.Status & 32) == 32)
             {
                 //System.Diagnostics.Debug.WriteLine("stack is running");
@@ -199,36 +257,10 @@ namespace WindowsFormsApplication1
         }
 
 
-        public bool Timer_Enable
-        {
-            get
-            {
-                return this.tmr.Enabled;
-            }
-            set
-            {
-                this.tmr.Elapsed += new ElapsedEventHandler(OnTimedEvent);
-                this.tmr.Enabled = value;
-            }
-        }
-
-        public double Timer_Interval
-        {
-            get
-            {
-                return this.tmr.Interval;
-            }
-            set
-            {
-                this.tmr.Interval = value;
-            }
-        }
-
         private int readStatus()
         {
-            //  this.Status = rnd.Next(0, 32);
-            this.Status = Conversions.ToInteger(Interaction.GetSetting("ShopBot", "UserData", "Status", Conversions.ToString(1)));
-            return this.Status;
+            return Conversions.ToInteger(Interaction.GetSetting("ShopBot", "UserData", "Status", Conversions.ToString(1)));
+
         }
 
         private int readSpeed()
@@ -267,11 +299,18 @@ namespace WindowsFormsApplication1
         private void runCommand(object sender, System.Timers.ElapsedEventArgs e)
         {
 
-            Console.WriteLine("command queue count"+commandQueue.Count);
+            Console.WriteLine("command queue contents: [");
+            for (int i =0;i<commandQueue.Count; i++)
+            {
+                Console.WriteLine(commandQueue[i]);
+            }
+            Console.WriteLine("end queue contents: ]");
+
+
             if (commandQueue.Count > 0)
             {
-                this.readStatus();
-                if (this.Status == 0)
+                var _status = this.readStatus();
+                if (_status == 0)
                 {
                     //outputField.Text = "sending command to shopbot:" + commandQueue.Count + ":" + this.Status;
                     var command = "FP, " + commandQueue[0] + ", 1, 1, 1, 1, 0, -0.00, 0, 0, 1, 1";
